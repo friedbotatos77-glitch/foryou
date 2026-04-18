@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>For You</title>
+  <style>
+    :root {
+      --bg-start: #f7efe4;
+      --bg-end: #e9d6c0;
+      --env-front: #f3ddc5;
+      --env-shadow: #d7b58b;
+      --env-flap: #d9896a;
+      --env-flap-dark: #b8664f;
+      --ink: #5b4032;
+      --accent: #a54838;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      padding: max(16px, env(safe-area-inset-top))
+        max(16px, env(safe-area-inset-right))
+        max(16px, env(safe-area-inset-bottom))
+        max(16px, env(safe-area-inset-left));
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.9), transparent 35%),
+        linear-gradient(160deg, var(--bg-start), var(--bg-end));
+    }
+
+    .scene {
+      width: min(92vw, 420px);
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+
+    .envelope {
+      position: relative;
+      width: min(78vw, 320px);
+      height: 220px;
+      perspective: 1400px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .shell {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      touch-action: manipulation;
+    }
+
+    .shadow {
+      position: absolute;
+      inset: auto 24px -26px;
+      height: 30px;
+      border-radius: 999px;
+      background: rgba(91, 64, 50, 0.18);
+      filter: blur(10px);
+      transform: scale(0.95);
+      transition: transform 0.8s ease, opacity 0.8s ease;
+    }
+
+    .envelope.open .shadow {
+      transform: scale(1.05);
+      opacity: 0.7;
+    }
+
+    .back,
+    .front,
+    .flap {
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+    }
+
+    .back {
+      background: linear-gradient(145deg, #f6e7d6, #e8ccb0);
+      box-shadow: 0 16px 30px rgba(91, 64, 50, 0.16);
+    }
+
+    .front {
+      z-index: 4;
+      background:
+        linear-gradient(135deg, transparent 49.5%, var(--env-shadow) 50%, transparent 50.5%) left,
+        linear-gradient(-135deg, transparent 49.5%, var(--env-shadow) 50%, transparent 50.5%) right,
+        linear-gradient(0deg, var(--env-front), #ebcfb0);
+      background-size: 50% 100%, 50% 100%, 100% 100%;
+      background-repeat: no-repeat;
+      clip-path: polygon(0 32%, 50% 72%, 100% 32%, 100% 100%, 0 100%);
+    }
+
+    .flap {
+      z-index: 5;
+      background: linear-gradient(160deg, var(--env-flap), var(--env-flap-dark));
+      clip-path: polygon(0 0, 100% 0, 50% 68%);
+      transform-origin: top center;
+      transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      backface-visibility: hidden;
+    }
+
+    .letter {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 14px;
+      height: 172px;
+      padding: 22px 18px;
+      display: grid;
+      justify-items: center;
+      align-content: center;
+      gap: 12px;
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.95)),
+        repeating-linear-gradient(
+          180deg,
+          transparent 0,
+          transparent 27px,
+          rgba(165, 72, 56, 0.08) 28px
+        );
+      box-shadow: 0 14px 28px rgba(91, 64, 50, 0.14);
+      transform: translateY(36px) scale(0.92);
+      opacity: 0;
+      z-index: 3;
+      transition:
+        transform 0.95s cubic-bezier(0.2, 0.8, 0.2, 1),
+        opacity 0.5s ease;
+    }
+
+    .letter h1 {
+      margin: 0;
+      font-size: 1.45rem;
+      font-weight: 600;
+    }
+
+    .letter p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: rgba(91, 64, 50, 0.8);
+      text-align: center;
+    }
+
+    .play-btn {
+      width: 78px;
+      height: 78px;
+      border: 0;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 1.6rem;
+      color: #fff;
+      background: linear-gradient(160deg, var(--accent), #7f3025);
+      box-shadow: 0 12px 22px rgba(127, 48, 37, 0.28);
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+      touch-action: manipulation;
+    }
+
+    .play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 28px rgba(127, 48, 37, 0.34);
+    }
+
+    .play-btn:active {
+      transform: scale(0.96);
+    }
+
+    .play-btn.is-playing {
+      filter: saturate(1.15);
+    }
+
+    .hint {
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .envelope.open .flap {
+      transform: rotateX(-180deg);
+    }
+
+    .envelope.open .letter {
+      transform: translateY(-118px) scale(1);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        overflow: clip;
+      }
+
+      .envelope {
+        width: min(86vw, 320px);
+        height: 198px;
+      }
+
+      .letter {
+        left: 16px;
+        right: 16px;
+        bottom: 12px;
+        height: 156px;
+        padding: 18px 14px;
+        gap: 10px;
+      }
+
+      .letter h1 {
+        font-size: 1.25rem;
+      }
+
+      .letter p,
+      .hint {
+        font-size: 0.8rem;
+      }
+
+      .envelope.open .letter {
+        transform: translateY(-92px) scale(1);
+      }
+    }
+
+    @media (hover: none) {
+      .play-btn:hover {
+        transform: none;
+        box-shadow: 0 12px 22px rgba(127, 48, 37, 0.28);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .flap,
+      .letter,
+      .shadow,
+      .play-btn {
+        transition-duration: 0.01ms;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene">
+    <div class="envelope" id="envelope">
+      <div class="shadow"></div>
+
+      <div class="shell" id="envelopeToggle" role="button" tabindex="0" aria-label="Open envelope">
+        <div class="back"></div>
+
+        <div class="letter">
+          <h1>For You</h1>
+          <button class="play-btn" id="playButton" type="button" aria-label="Play voice message">&#9654;</button>
+          <p id="audioLabel">Tap to listen</p>
+          <div class="hint">Open, then press play</div>
+        </div>
+
+        <div class="front"></div>
+        <div class="flap"></div>
+      </div>
+    </div>
+  </div>
+
+  <audio id="voice" preload="auto">
+    <source src="voice.mp3" type="audio/mpeg" />
+    Your browser does not support the audio element.
+  </audio>
+
+  <script>
+    const envelope = document.getElementById("envelope");
+    const envelopeToggle = document.getElementById("envelopeToggle");
+    const playButton = document.getElementById("playButton");
+    const voice = document.getElementById("voice");
+    const audioLabel = document.getElementById("audioLabel");
+
+    function toggleEnvelope() {
+      envelope.classList.toggle("open");
+    }
+
+    async function toggleAudio(event) {
+      event.stopPropagation();
+
+      try {
+        if (voice.paused) {
+          await voice.play();
+        } else {
+          voice.pause();
+        }
+      } catch (error) {
+        audioLabel.textContent = "Could not play audio";
+      }
+    }
+
+    function syncAudioUI() {
+      const isPlaying = !voice.paused;
+      playButton.innerHTML = isPlaying ? "||" : "&#9654;";
+      playButton.classList.toggle("is-playing", isPlaying);
+      audioLabel.textContent = isPlaying ? "Playing your message" : "Tap to listen";
+    }
+
+    envelopeToggle.addEventListener("click", toggleEnvelope);
+
+    envelopeToggle.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleEnvelope();
+      }
+    });
+
+    playButton.addEventListener("click", toggleAudio);
+    voice.addEventListener("play", syncAudioUI);
+    voice.addEventListener("pause", syncAudioUI);
+    voice.addEventListener("ended", syncAudioUI);
+    voice.addEventListener("error", () => {
+      audioLabel.textContent = "Audio could not be loaded";
+    });
+  </script>
+</body>
+</html>
